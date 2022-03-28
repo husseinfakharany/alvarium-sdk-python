@@ -1,12 +1,15 @@
+from urllib.request import Request
 from alvarium.contracts.config import SdkInfo
-from .interfaces import Annotator
+from alvarium.sign.contracts import SignInfo, SignType
+from .interfaces import Annotator, RequestHandler
 from alvarium.contracts.annotation import AnnotationType
-from .exceptions import AnnotatorException
+from .exceptions import AnnotatorException, RequestHandlerException
 from .mock import MockAnnotator
 from .tpm import TpmAnnotator
 from .pki import PkiAnnotator
 from .source import SourceAnnotator
 from .tls import TlsAnnotator
+
 
 class AnnotatorFactory():
     """A factory that provides multiple implementations of the Annotator interface"""
@@ -23,6 +26,16 @@ class AnnotatorFactory():
             return TlsAnnotator(hash=sdk_info.hash.type, signature=sdk_info.signature)
         elif kind == AnnotationType.PKI:
             return PkiAnnotator(hash=sdk_info.hash.type, sign_info=sdk_info.signature)
+        elif kind == AnnotationType.HTTPPKI:
+            pass
         else:
             raise AnnotatorException("Annotator type is not supported")
             
+
+class RequestHandlerFactory():
+
+    def getRequestHandler(request: Request, keys: SignInfo) -> RequestHandler:
+        if keys.private.type == SignType.ED25519:
+            pass
+        else:
+            raise RequestHandlerException("Key type is not supported")

@@ -12,6 +12,7 @@ class AnnotationType(Enum):
     PKI = "pki"
     TLS = "tls"
     SOURCE = "src"
+    HTTPPKI = "httppki"
     MOCK = "mock"
 
     def __str__(self) -> str:

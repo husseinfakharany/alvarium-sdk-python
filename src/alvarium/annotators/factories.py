@@ -30,12 +30,3 @@ class AnnotatorFactory():
             pass
         else:
             raise AnnotatorException("Annotator type is not supported")
-            
-
-class RequestHandlerFactory():
-
-    def getRequestHandler(request: Request, keys: SignInfo) -> RequestHandler:
-        if keys.private.type == SignType.ED25519:
-            pass
-        else:
-            raise RequestHandlerException("Key type is not supported")

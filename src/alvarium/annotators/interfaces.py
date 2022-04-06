@@ -12,9 +12,3 @@ class Annotator(ABC):
     @abstractmethod
     def execute(self, data:bytes, ctx: PropertyBag = None) -> Annotation:
         pass
-
-class RequestHandler(ABC):
-
-    @abstractmethod
-    def AddSignatureHeaders(self, ticks: datetime, fields: list[str], keys: SignInfo) -> RequestHandlerException:
-        pass

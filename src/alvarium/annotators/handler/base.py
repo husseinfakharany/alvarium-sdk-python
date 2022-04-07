@@ -1,22 +1,21 @@
 import json
-from requests import Request, Session
-from exceptions import ParserException
+from requests import Request, Session, structures
+from .exceptions import ParserException
 from urllib.parse import urlparse
-from contracts import parseResult
+from .contracts import parseResult, DerivedComponent
 from io import StringIO
 
-
 def parseSignature(r: Request) -> parseResult:
+
+    #Making the request headers case insensitive
+    headers = structures.CaseInsensitiveDict(r.headers)
+
     #Signature Inputs Extraction
-    signatureInput = r.headers["Signature-Input"]
+    signatureInput = headers.get("Signature-Input")
     try:
-        signature = r.headers["Signature"]
+        signature = headers.get("Signature")
     except KeyError:
         signature = ""
-
-    # Returns key error if not found
-    # print(signature)
-    # print(signatureInput)
 
     signatureInputList = signatureInput.split(";",1)
     signatureInputHeader = signatureInputList[0].split(" ")
@@ -38,24 +37,23 @@ def parseSignature(r: Request) -> parseResult:
     signatureInputBody = StringIO()
 
     for field in signatureInputHeader:
-        #remove double quotes from the field to access it directly in the header map
+        #Remove double quotes from the field to access it directly in the header map
         key = field[1 : len(field)-1]
         if key[0] == "@":
-            #TODO use contracts
-            if key == "@method":
+            if DerivedComponent(key) == DerivedComponent.Method:
                 signatureInputFields[key] = [r.method]
-            elif key == "@target-uri" or key == "@request-target":
+            elif DerivedComponent(key) == DerivedComponent.TargetURI or key == DerivedComponent.RequestTarget:
                 #Both derived components represent the same thing as we consider the URL to be absolute
                 signatureInputFields[key] = [r.url]
-            elif key == "@authority":
+            elif DerivedComponent(key) == DerivedComponent.Authority:
                 signatureInputFields[key] = [parsed_url.netloc]
-            elif key == "@scheme":
+            elif DerivedComponent(key) == DerivedComponent.Scheme:
                 signatureInputFields[key] = [parsed_url.scheme]
-            elif key == "@path":
+            elif DerivedComponent(key) == DerivedComponent.Path:
                 signatureInputFields[key] = [parsed_url.path]
-            elif key == "@query":
+            elif DerivedComponent(key) == DerivedComponent.Query:
                 signatureInputFields[key] = ["?"+parsed_url.query]
-            elif key == "@query-params":
+            elif DerivedComponent(key) == DerivedComponent.QueryParams:
                 queryParams = []
                 rawQueryParams = parsed_url.query.split("&")
                 for rawQueryParam in rawQueryParams:
@@ -70,7 +68,7 @@ def parseSignature(r: Request) -> parseResult:
                 raise ParserException(f"Unhandled Specialty Component {key}")
         else:
             try:
-                fieldValues = r.headers[key]
+                fieldValues = headers.get(key)
                 #Removing leading and trailing whitespaces
                 signatureInputFields[key] = [fieldValues.strip()]
             except KeyError:
@@ -87,26 +85,11 @@ def parseSignature(r: Request) -> parseResult:
     parsedSignatureInput = f"{signatureInputBody.getvalue()};{signatureInputTail}"
     s = parseResult(seed=parsedSignatureInput, signature=signature, keyid=keyid, algorithm=algorithm)
 
-    print(s.seed)
     return s
 
-if __name__ == '__main__':
-    payload = {'some': 'data'}
-    headers = {'Content-Type': 'application/json',
-                "Host":"example.com",
-		        "Date":"Tue, 20 Apr 2021 02:07:55 GMT",
-                'Content-Length':'18',
-                'Signature-Input':"\"Date\" \"@method\" \"@path\" \"@authority\" \"Content-Type\" \"Content-Length\" \"@query-params\" \"@query\";created=1644758607;keyid=\"public.key\";alg=\"ed25519\";"}
-    
-    #The URL has to be a absolute
-    url = 'http://example.com/foo?var1=&var2=2'
-    
+#prepped = req.prepare()
+#session = Session()
+#session.send(prepped)
 
-    data=json.dumps(payload)
-    req = Request('POST',url,headers=headers,json=data)
    
-    parseSignature(req)
-    #prepped = req.prepare()
-    #session = Session()
-    #session.send(prepped)
 

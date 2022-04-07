@@ -1,9 +1,7 @@
-from urllib.request import Request
 from alvarium.contracts.config import SdkInfo
-from alvarium.sign.contracts import SignInfo, SignType
-from .interfaces import Annotator, RequestHandler
+from .interfaces import Annotator
 from alvarium.contracts.annotation import AnnotationType
-from .exceptions import AnnotatorException, RequestHandlerException
+from .exceptions import AnnotatorException
 from .mock import MockAnnotator
 from .tpm import TpmAnnotator
 from .pki import PkiAnnotator

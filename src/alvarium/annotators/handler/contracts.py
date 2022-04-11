@@ -21,3 +21,7 @@ class parseResult:
     keyid: str
     algorithm: str
 
+    def __eq__(self, __o: object) -> bool:
+        if not isinstance(__o, parseResult):
+            return NotImplemented
+        return self.seed == __o.seed and self.signature == __o.signature and self.keyid == __o.keyid and self.algorithm == __o.algorithm

@@ -1,5 +1,5 @@
 import json
-from requests import Request, Session, structures
+from requests import Request, structures
 from .exceptions import ParserException
 from urllib.parse import urlparse
 from .contracts import parseResult, DerivedComponent
@@ -14,6 +14,8 @@ def parseSignature(r: Request) -> parseResult:
     signatureInput = headers.get("Signature-Input")
     try:
         signature = headers.get("Signature")
+        if signature == None:
+            signature = ""
     except KeyError:
         signature = ""
 
@@ -23,6 +25,8 @@ def parseSignature(r: Request) -> parseResult:
     
     signatureInputParsedTail = signatureInputTail.split(";")
 
+    algorithm = ""
+    keyid = ""
     for s in signatureInputParsedTail:
         if "alg" in s:
             raw = s.split("=")[1]
@@ -42,7 +46,7 @@ def parseSignature(r: Request) -> parseResult:
         if key[0] == "@":
             if DerivedComponent(key) == DerivedComponent.Method:
                 signatureInputFields[key] = [r.method]
-            elif DerivedComponent(key) == DerivedComponent.TargetURI or key == DerivedComponent.RequestTarget:
+            elif DerivedComponent(key) == DerivedComponent.TargetURI or DerivedComponent(key) == DerivedComponent.RequestTarget:
                 #Both derived components represent the same thing as we consider the URL to be absolute
                 signatureInputFields[key] = [r.url]
             elif DerivedComponent(key) == DerivedComponent.Authority:
@@ -86,10 +90,5 @@ def parseSignature(r: Request) -> parseResult:
     s = parseResult(seed=parsedSignatureInput, signature=signature, keyid=keyid, algorithm=algorithm)
 
     return s
-
-#prepped = req.prepare()
-#session = Session()
-#session.send(prepped)
-
    
 

@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 import datetime
-from alvarium.annotators.exceptions import RequestHandlerException
-
+from typing import List
 from alvarium.sign.contracts import SignInfo
 
 class RequestHandler(ABC):
 
     @abstractmethod
-    def AddSignatureHeaders(self, ticks: datetime, fields: list[str], keys: SignInfo) -> RequestHandlerException:
+    def AddSignatureHeaders(self, ticks: datetime, fields: List[str], keys: SignInfo) -> None:
         pass

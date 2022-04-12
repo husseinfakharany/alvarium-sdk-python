@@ -4,13 +4,13 @@ import datetime
 
 from requests import Request
 
-from alvarium.annotators.handler.ed25519 import requestHandler
+from alvarium.annotators.handler.ed25519 import Ed25519RequestHandler
 from alvarium.annotators.handler.contracts import DerivedComponent
 from alvarium.sign.contracts import SignInfo, KeyInfo
 
-class AssemblerTest(unittest.TestCase):
+class HandlerTest(unittest.TestCase):
 
-    def test_assembler_should_return_right_signature_headers(self):
+    def test_handler_should_return_correct_signature_headers(self):
         with open("./tests/mock-info.json", 'r') as file:
             b = file.read()
         
@@ -22,18 +22,17 @@ class AssemblerTest(unittest.TestCase):
 
         req = Request('POST', url, headers=headers)
         
-        instance = requestHandler(req)
+        handler = Ed25519RequestHandler(req)
         
         info_json = json.loads(b) 
         keys = SignInfo(public = KeyInfo.from_json(json.dumps(info_json["signature"]["public"])),
                             private = KeyInfo.from_json(json.dumps(info_json["signature"]["private"])))
 
         fields = [DerivedComponent.Method, DerivedComponent.Path, DerivedComponent.Authority, "Content-Type", "Content-Length"]
-        instance.add_signature_headers(ticks, fields, keys)
+        handler.AddSignatureHeaders(ticks, fields, keys)
 
-        result = instance.request.headers['Signature-Input']
-        template = '"@method" "@path" "@authority" "Content-Type" "Content-Length";created={};keyid="{}";alg="{}";'
-        expected = template.format(str(int(ticks.timestamp())), str(keys.public.path), str(keys.public.type))
+        result = handler.request.headers['Signature-Input']
+        expected = f'"@method" "@path" "@authority" "Content-Type" "Content-Length";created={str(int(ticks.timestamp()))};keyid="{str(keys.public.path)}";alg="{str(keys.public.type)}";'
         
         self.assertEqual(expected, result)
 

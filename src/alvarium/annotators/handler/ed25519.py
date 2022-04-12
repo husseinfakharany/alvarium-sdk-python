@@ -1,34 +1,35 @@
 import datetime
+from typing import List
 
 from requests import Request
+from alvarium.annotators.handler.interfaces import RequestHandler
 
 from alvarium.sign.contracts import SignInfo
-from alvarium.sign.ed25519 import Ed25519ignProvider
+from alvarium.sign.ed25519 import Ed25519SignProvider
+from io import StringIO
 from .base import parseSignature
 
 
-class requestHandler():
-    request: Request
+class Ed25519RequestHandler(RequestHandler):
 
     def __init__(self, request: Request) -> None:
         self.request = request
 
-    def add_signature_headers(self, ticks: datetime, fields: list, keys: SignInfo):
-        headerValue = ""
+    def AddSignatureHeaders(self, ticks: datetime, fields: List[str], keys: SignInfo) -> None:
+        headerValue = StringIO()
         
         for i in range(len(fields)):
-            headerValue = headerValue + '"' + str(fields[i]) + '"'
+            headerValue.write(f'"{str(fields[i])}"')
             if i < len(fields) - 1:
-                headerValue = headerValue + " " 
+                headerValue.write(f' ')
 
-        headerValue = headerValue + ';created=' + str(int(ticks.timestamp())) + ';keyid="' + str(keys.public.path) + '";alg="' + str(keys.public.type) + '";'
+        headerValue.write(f';created={str(int(ticks.timestamp()))};keyid="{str(keys.public.path)}";alg="{str(keys.public.type)}";')
 
-        self.request.headers['Signature-Input'] = headerValue
+        self.request.headers['Signature-Input'] = headerValue.getvalue()
         
         parsed = parseSignature(self.request)
         inputValue = bytes(parsed.seed, 'utf-8')
-        
-        p = Ed25519ignProvider() 
+        p = Ed25519SignProvider() 
         
         with open(keys.private.path, 'r') as file:
             prv_hex = file.read()

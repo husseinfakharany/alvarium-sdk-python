@@ -22,6 +22,10 @@ class HttpPkiAnnotator(Annotator):
     def _verify_signature(self, key: KeyInfo, signable: Signable) -> bool:
         """ Responsible for verifying the signature, returns true if the verification passed
             , false otherwise."""
+        
+        if(len(signable.signature) == 0):
+            return False
+
         try:
             sign_provider = SignProviderFactory().get_provider(sign_type=key.type)
         except SignException as e:
@@ -41,10 +45,10 @@ class HttpPkiAnnotator(Annotator):
             try:
                 hex_signature = bytes.fromhex(signable.signature)
             except:
-                raise AnnotatorException("Cannot verify signature.")
+                raise AnnotatorException("Invalid siganture syntax: It is not in hex.")
 
 
-
+    
             return  sign_provider.verify(key=hex_pub_key, 
                                         content=bytes(signable.seed, 'utf-8'),
                                         signed=hex_signature)
@@ -60,12 +64,10 @@ class HttpPkiAnnotator(Annotator):
 
         try:
             parsed_data = parseSignature(req)
-        except AnnotatorException as e:
+        except ParserException as e:
             raise AnnotatorException("cannot parse the http request.", e)
 
 
-        if(parsed_data.signature == ""):
-            raise AnnotatorException("Signature is empty.")
 
         # create Signable object
         signable = Signable(parsed_data.seed, parsed_data.signature)
@@ -74,8 +76,8 @@ class HttpPkiAnnotator(Annotator):
 
         try:
             signType = SignType(parsed_data.algorithm)
-        except SignException as e:
-            raise AnnotatorException("Invalid key type specified" + str(parsed_data.algorithm), e)
+        except Exception as e:
+            raise AnnotatorException("Invalid key type specified" + str(parsed_data.algorithm))
 
         k = KeyInfo(signType, parsed_data.keyid)
 

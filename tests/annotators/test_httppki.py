@@ -13,6 +13,8 @@ from alvarium.annotators.contracts import Signable
 from alvarium.annotators.handler.contracts import DerivedComponent
 from alvarium.annotators.handler.ed25519 import Ed25519RequestHandler
 from alvarium.utils import ImmutablePropertyBag
+from alvarium.annotators.exceptions import AnnotatorException
+
 
 class HTTPPKITest(unittest.TestCase):
 
@@ -47,16 +49,9 @@ class HTTPPKITest(unittest.TestCase):
         modified_request.headers['Signature-Input'] = '\"@method\" \"@path\" \"@authority\" \"Content-Type\" \"Content-Length\";created=1646146637;keyid=\"public.key\";alg=\"invalid\"'
         ctx = ImmutablePropertyBag({'request': modified_request})
 
-        try:
+        with self.assertRaises(AnnotatorException):
             annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
-            self.assertFalse(annotation.is_satisfied)
-            self.assertEqual(type(annotation), Annotation)
-
-        except Exception as e:
-            self.assertEqual(str(e), "'invalid' is not a valid SignType")
-            return
         
-        self.assertTrue(False)
 
     def test_httppki_execute_invalid_key_test(self):
 
@@ -64,13 +59,9 @@ class HTTPPKITest(unittest.TestCase):
         modified_request.headers['Signature-Input'] = '\"@method\" \"@path\" \"@authority\" \"Content-Type\" \"Content-Length\";created=1646146637;keyid=\"invalid\";alg=\"ed25519\"'
         ctx = ImmutablePropertyBag({'request': modified_request})
 
-        try:
+        with self.assertRaises(AnnotatorException):
             annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
-        except Exception as e:
-            self.assertEqual(str(e), "Cannot read Public Key File.")
-            return
-        
-        self.assertTrue(False)
+
 
 
     def test_httppki_execute_empty_signature_test(self):
@@ -80,30 +71,31 @@ class HTTPPKITest(unittest.TestCase):
         
         ctx = ImmutablePropertyBag({'request': modified_request})
 
-        try:
-            annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
-        except Exception as e:
-            self.assertEqual(str(e), "Signature is empty.")
-            return
-        
-        self.assertTrue(False)
+        # with self.assertRaises(AnnotatorException):
+        annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
+        self.assertFalse(annotation.is_satisfied)
             
     
-    def test_httppki_execute_invalid_signature_test(self):
+    def test_httppki_execute_invalid_signature_syntax_test(self):
 
         modified_request = self.request
         modified_request.headers['signature'] = "invalid"
         
         ctx = ImmutablePropertyBag({'request': modified_request})
 
-        try:
+        with self.assertRaises(AnnotatorException):
             annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
-        except Exception as e:
-            self.assertEqual(str(e), "Cannot verify signature.")
-            return
+
+    def test_httppki_execute_incorrect_signature_test(self):
+
+        modified_request = self.request
+        modified_request.headers['signature'] = "123456"
         
-        self.assertTrue(False)
-            
+        ctx = ImmutablePropertyBag({'request': modified_request})
+
+        annotation = self.annotator.execute(data=bytes(modified_request.json, 'utf-8'), ctx=ctx)
+        self.assertFalse(annotation.is_satisfied)
+
 
     def buildRequest(self, keys: SignInfo):
         # seed = "helloo"

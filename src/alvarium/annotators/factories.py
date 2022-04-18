@@ -25,6 +25,6 @@ class AnnotatorFactory():
         elif kind == AnnotationType.PKI:
             return PkiAnnotator(hash=sdk_info.hash.type, sign_info=sdk_info.signature)
         elif kind == AnnotationType.HTTPPKI:
-            return HttpPkiAnnotator(hash=sdk.hash.type, sign_info=sdk_info.signature)
+            return HttpPkiAnnotator(hash=sdk_info.hash.type, sign_info=sdk_info.signature)
         else:
             raise AnnotatorException("Annotator type is not supported")
